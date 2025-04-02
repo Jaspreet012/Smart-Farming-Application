@@ -1,6 +1,28 @@
 import { useState, useEffect } from 'react';
 import DailyForecast from './DailyForecast';
 
+// Weather icon mapping
+const weatherIcons = {
+  '01d': '☀️', // clear sky (day)
+  '01n': '🌙', // clear sky (night)
+  '02d': '⛅', // few clouds (day)
+  '02n': '⛅', // few clouds (night)
+  '03d': '☁️', // scattered clouds
+  '03n': '☁️', // scattered clouds
+  '04d': '☁️', // broken clouds
+  '04n': '☁️', // broken clouds
+  '09d': '🌧️', // shower rain
+  '09n': '🌧️', // shower rain
+  '10d': '🌦️', // rain (day)
+  '10n': '🌧️', // rain (night)
+  '11d': '⚡', // thunderstorm
+  '11n': '⚡', // thunderstorm
+  '13d': '❄️', // snow
+  '13n': '❄️', // snow
+  '50d': '🌫️', // mist
+  '50n': '🌫️', // mist
+};
+
 const Weather = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +107,11 @@ const Weather = () => {
     fetchData();
   }, []);
 
+  // Get custom weather icon based on OpenWeather icon code
+  const getWeatherIcon = (iconCode) => {
+    return weatherIcons[iconCode] || '☀️'; // Default to sun if code not found
+  };
+
   // Aggregate 3-hour interval data into daily forecasts
   const getDailyForecasts = (list) => {
     const dailyForecasts = {};
@@ -99,7 +126,8 @@ const Weather = () => {
           wind_speed: item.wind.speed,
           precipitation: item.rain ? item.rain['3h'] || 0 : 0, // Precipitation in mm
           weather: item.weather[0].description,
-          icon: item.weather[0].icon,
+          icon: getWeatherIcon(item.weather[0].icon),
+          iconCode: item.weather[0].icon,
         };
       } else {
         // Update min and max temperatures
@@ -121,7 +149,11 @@ const Weather = () => {
   };
 
   if (loading) {
-    return <div className="text-center mt-8 text-green-700">Loading weather data...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
   }
 
   if (error) {
@@ -134,12 +166,12 @@ const Weather = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Enter a city name"
-            className="p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-full max-w-md"
             required
           />
           <button
             type="submit"
-            className="bg-green-600 text-white p-2 rounded-r-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="bg-green-600 text-white p-3 px-6 rounded-r-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
           >
             Search
           </button>
@@ -149,63 +181,88 @@ const Weather = () => {
   }
 
   if (!weatherData || !weatherData.list) {
-    return <div className="text-center mt-8 text-green-700">No weather data available.</div>;
-  }
-
-  const dailyForecasts = getDailyForecasts(weatherData.list);
-
-  return (
-    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-lg">
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="mb-8 flex justify-center">
-        <div className="flex">
+    return (
+      <div className="text-center mt-8 text-green-700">
+        No weather data available.
+        <form onSubmit={handleSearch} className="mt-4 flex justify-center">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Enter a city name"
-            className="p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-full max-w-md"
             required
           />
           <button
             type="submit"
-            className="bg-green-600 text-white p-2 rounded-r-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="bg-green-600 text-white p-3 px-6 rounded-r-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  const dailyForecasts = getDailyForecasts(weatherData.list);
+
+  return (
+    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-lg max-w-8xl mx-auto">
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="mb-8 flex justify-center">
+        <div className="flex w-full max-w-md">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Enter a city name"
+            className="p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-full bg-white"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-green-600 text-white p-3 px-6 rounded-r-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
           >
             Search
           </button>
         </div>
       </form>
 
-      {/* Current Weather */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-2xl font-bold text-green-800 mb-4">Current Weather</h3>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <img
-              src={`http://openweathermap.org/img/wn/${weatherData.list[0].weather[0].icon}.png`}
-              alt={weatherData.list[0].weather[0].description}
-              className="w-12 h-12"
-            />
-            <p className="text-lg text-gray-700 capitalize">
-              {weatherData.list[0].weather[0].description}
-            </p>
+      {/* Current Weather - Simplified UI */}
+      <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-green-100 m-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+          {/* Main Weather Info */}
+          <div className="flex items-center gap-6 pl-10">
+            <span className="text-7xl">
+              {getWeatherIcon(weatherData.list[0].weather[0].icon)}
+            </span>
+            <div>
+              <p className="text-5xl font-bold text-gray-800">
+                {Math.round(weatherData.list[0].main.temp)}°C
+              </p>
+              <p className="text-xl text-gray-600 capitalize mt-2">
+                {weatherData.list[0].weather[0].description}
+              </p>
+            </div>
           </div>
-          <div className="flex space-x-6">
-            <div>
-              <p className="text-gray-600">Temperature</p>
-              <p className="text-gray-800 font-medium">{weatherData.list[0].main.temp}°C</p>
+
+          {/* Weather Details - Only wind, humidity, precipitation */}
+          <div className="grid grid-cols-3 gap-4 w-full md:w-auto pr-10">
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <p className="text-gray-600 text-sm">Humidity</p>
+              <p className="text-2xl font-semibold text-green-700">
+                {weatherData.list[0].main.humidity}%
+              </p>
             </div>
-            <div>
-              <p className="text-gray-600">Humidity</p>
-              <p className="text-gray-800 font-medium">{weatherData.list[0].main.humidity}%</p>
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <p className="text-gray-600 text-sm">Wind Speed</p>
+              <p className="text-2xl font-semibold text-green-700">
+                {weatherData.list[0].wind.speed} m/s
+              </p>
             </div>
-            <div>
-              <p className="text-gray-600">Wind Speed</p>
-              <p className="text-gray-800 font-medium">{weatherData.list[0].wind.speed} m/s</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Precipitation</p>
-              <p className="text-gray-800 font-medium">
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <p className="text-gray-600 text-sm">Precipitation</p>
+              <p className="text-2xl font-semibold text-green-700">
                 {weatherData.list[0].rain ? weatherData.list[0].rain['3h'] || 0 : 0} mm
               </p>
             </div>

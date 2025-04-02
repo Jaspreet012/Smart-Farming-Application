@@ -1,132 +1,228 @@
 import { useState } from "react";
 
 const Crop = () => {
-  const [soilData, setSoilData] = useState(null);
-  const [npkValues, setNpkValues] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
+    nitrogen: "",
+    phosphorus: "",
+    potassium: "",
+    ph: "",
+    temperature: "",
+    humidity: "",
+    rainfall: "",
+  });
+  const [submittedData, setSubmittedData] = useState(null);
 
-  const fetchSoilData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Example coordinates (replace with dynamic values if needed)
-      const lat = 51.57;
-      const lon = 5.39;
-
-      const response = await fetch(
-        `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&properties=phh2o,ocd,cec,sand,clay&depth=0-5cm`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch soil data");
-      }
-
-      const data = await response.json();
-      setSoilData(data);
-      calculateNPK(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const calculateNPK = (soilData) => {
-    if (!soilData?.properties?.layers) return;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmittedData({ ...formData });
+  };
 
-    const getLayerValue = (name) => {
-      const layer = soilData.properties.layers.find((l) => l.name === name);
-      if (!layer) return null;
-      const depth = layer.depths.find((d) => d.label === "0-5cm");
-      return depth ? depth.values.mean / (layer.unit_measure?.d_factor || 1) : null;
-    };
-
-    // Extract soil properties
-    const phh2o = getLayerValue("phh2o");
-    const ocd = getLayerValue("ocd");
-    const cec = getLayerValue("cec");
-    const sand = getLayerValue("sand");
-    const clay = getLayerValue("clay");
-
-    // Calculate NPK values
-    const nitrogen = ocd ? Math.round(ocd * 50) : null; // ocd to ppm conversion
-    const phosphorus = phh2o ? Math.round(30 + (phh2o - 5.5) * 15) : null; // pH-based estimate
-    const potassium = cec ? Math.round(cec * 390 * (clay > 35 ? 0.05 : 0.03)) : null; // CEC-based
-
-    setNpkValues({
-      nitrogen: nitrogen !== null ? `${nitrogen} mg/kg` : "N/A",
-      phosphorus: phosphorus !== null ? `${phosphorus} mg/kg` : "N/A",
-      potassium: potassium !== null ? `${potassium} mg/kg` : "N/A",
-      ph: phh2o?.toFixed(1) || "N/A",
-      texture: sand > 70 ? "sandy" : clay > 35 ? "clay" : "loamy"
+  const handleReset = () => {
+    setFormData({
+      nitrogen: "",
+      phosphorus: "",
+      potassium: "",
+      ph: "",
+      temperature: "",
+      humidity: "",
+      rainfall: "",
     });
-  };
-
-  const handleButtonClick = () => {
-    if (!npkValues) {
-      fetchSoilData();
-    } else {
-      setNpkValues(null);
-    }
+    setSubmittedData(null);
   };
 
   return (
-    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-lg">
-      <button
-        onClick={handleButtonClick}
-        className={`px-6 py-3 rounded-lg font-medium text-white transition-all ${
-          loading ? "bg-gray-500" : "bg-green-600 hover:bg-green-700"
-        }`}
-        disabled={loading}
-      >
-        {loading ? "Analyzing Soil..." : npkValues ? "Reset" : "Get NPK Values"}
-      </button>
+    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-xl mt-10">
+      <h2 className="text-2xl font-bold text-black-800 mb-6">
+        Soil and Climate Input
+      </h2>
 
-      {error && (
-        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
-          Error: {error}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Soil Nutrients */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-black-700">
+              Soil Nutrients (mg/kg)
+            </h3>
+            <div>
+              <label className="block text-gray-700 mb-1">Nitrogen (N)</label>
+              <input
+                type="number"
+                name="nitrogen"
+                value={formData.nitrogen}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 90"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Phosphorus (P)</label>
+              <input
+                type="number"
+                name="phosphorus"
+                value={formData.phosphorus}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 42"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Potassium (K)</label>
+              <input
+                type="number"
+                name="potassium"
+                value={formData.potassium}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 43"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Soil pH</label>
+              <input
+                type="number"
+                name="ph"
+                value={formData.ph}
+                onChange={handleChange}
+                min="0"
+                max="14"
+                step="0.1"
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 6.5"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Climate Factors */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-black-700">
+              Climate Factors
+            </h3>
+            <div>
+              <label className="block text-gray-700 mb-1">
+                Temperature (°C)
+              </label>
+              <input
+                type="number"
+                name="temperature"
+                value={formData.temperature}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 25.5"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Humidity (%)</label>
+              <input
+                type="number"
+                name="humidity"
+                value={formData.humidity}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 80"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Rainfall (mm)</label>
+              <input
+                type="number"
+                name="rainfall"
+                value={formData.rainfall}
+                onChange={handleChange}
+                min="0"
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. 200"
+                required
+              />
+            </div>
+          </div>
         </div>
-      )}
 
-      {npkValues && (
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-2xl font-bold text-green-800 mb-4">
-            Soil NPK Analysis (0-5cm depth)
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Submit Data
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </form>
+
+      {submittedData && (
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-xl font-bold text-green-800 mb-4">
+            Submitted Soil and Climate Data
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-lg font-semibold mb-3">Nutrient Values</h4>
-              <div className="space-y-3">
+              <h4 className="text-lg font-semibold mb-3">Soil Nutrients</h4>
+              <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Nitrogen (N):</span>
-                  <span className="font-medium">{npkValues.nitrogen}</span>
+                  <span className="font-medium">
+                    {submittedData.nitrogen} mg/kg
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Phosphorus (P):</span>
-                  <span className="font-medium">{npkValues.phosphorus}</span>
+                  <span className="font-medium">
+                    {submittedData.phosphorus} mg/kg
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Potassium (K):</span>
-                  <span className="font-medium">{npkValues.potassium}</span>
+                  <span className="font-medium">
+                    {submittedData.potassium} mg/kg
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Soil pH:</span>
+                  <span className="font-medium">{submittedData.ph}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-3">Soil Properties</h4>
-              <div className="space-y-3">
+              <h4 className="text-lg font-semibold mb-3">Climate Factors</h4>
+              <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Soil Texture:</span>
-                  <span className="font-medium capitalize">
-                    {npkValues.texture}
+                  <span className="text-gray-600">Temperature:</span>
+                  <span className="font-medium">
+                    {submittedData.temperature} °C
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">pH Level:</span>
-                  <span className="font-medium">{npkValues.ph}</span>
+                  <span className="text-gray-600">Humidity:</span>
+                  <span className="font-medium">{submittedData.humidity}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Rainfall:</span>
+                  <span className="font-medium">
+                    {submittedData.rainfall} mm
+                  </span>
                 </div>
               </div>
             </div>

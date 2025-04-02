@@ -1,6 +1,6 @@
 const DailyForecast = ({ dailyForecasts }) => {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-lg shadow-lg">
+    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-lg shadow-xl">
       <h3 className="text-2xl font-bold text-gray-800 mb-6">6-Day Forecast</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
         {dailyForecasts.map((day, index) => (
